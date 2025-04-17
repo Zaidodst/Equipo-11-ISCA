@@ -23,6 +23,10 @@ void game(/*struct de jugadores, */);
 void addPlayer(Players[]);//struct de los jugadores
 void showCounter(Players[]);
 
+//Variables globales
+#define TAM 5
+static int tope=0; //tope sera para definir el maximo de jugadores que podra aceptar la struct players
+
 //main
 int main(){
     menu();
@@ -31,6 +35,7 @@ int main(){
 }
 
 void menu(){
+    Players datos[TAM];
     int opc=0;
     do{
         cout<<"ASTEROIDS"<<endl;
@@ -45,7 +50,7 @@ void menu(){
             // llamar a funcion game
             break;
         case 2:
-            //llamar a funcion addPlayer
+            addPlayer(datos);
             break;
         case 3:
             //llamar a funcion showCounter
@@ -57,4 +62,20 @@ void menu(){
             break;
         }
     }while(opc!=4);
+}//menu
+
+void game(){
+    cout<<"Prueba :)"<<endl;
 }
+
+void addPlayer(Players datos[]){
+    if(tope<=TAM){
+        cout<<"Introduce your nickname: ";
+        cin>>datos[tope].nombre; //tope sirve como auxiliar para que tengamos control sobre la cant de jugadores
+        tope++;
+    }
+    else{
+        cout<<"Not enough space. Please try again later."<<endl;
+    }
+}//addPlayers
+
