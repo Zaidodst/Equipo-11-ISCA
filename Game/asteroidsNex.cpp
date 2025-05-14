@@ -12,88 +12,83 @@ MUÑOZ ROMO OSWALDO EMMANUEL
 #include <iostream>
 using namespace std;
 
-
-//Declaracion de structs
-
-struct Players{
-    char nombre[25];
-    long score;
-
-};
-
 //Declaracion de prototipos
-void menu();
-void game(/*struct de jugadores, */);
-void addPlayer(Players[]);//struct de los jugadores
-void showCounter(Players[]);
 
-//Variables globales
-#define TAM 5
-static int tope=0; //tope sera para definir el maximo de jugadores que podra aceptar la struct players
 
 //Main
 int main(){
-    sf::RenderWindow window(sf::VideoMode({200, 200}), "SFML works!");
-    sf::CircleShape shape(100.f);
-    shape.setFillColor(sf::Color::Green);
+    sf::RenderWindow ventana(sf::VideoMode({980, 800}), "Asteroids-Nex");
 
-    while (window.isOpen())
-    {
-        while (const std::optional event = window.pollEvent())
-        {
+    //Si se presiona una tecla y luego se deja de presionar
+    bool isPressed = false;
+
+    //Mantiene la ventana abierta
+    while(ventana.isOpen()){
+
+        while(const std::optional event = ventana.pollEvent()){
+            //Checa lo que presiona el usiario
+
+            //Letra A=Izquierda
+            if(sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::A)){
+                cout<<"Izquierda"<<endl;
+            }
+
+            //Letra D=Derecha
+             if(sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::D)){
+                cout<<"Derecha"<<endl;
+            }
+
+            //Letra W=Arriba
+             if(sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::W)){
+                cout<<"Arriba"<<endl;
+            }
+
+            //Letra S=Abajo
+             if(sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::S)){
+                cout<<"Abajo"<<endl;
+            }
+
+            //Letra espacio=Fire
+             if(sf::Keyboard::isKeyPressed(sf::Keyboard::Scancode::Space)){
+                //Se disparara
+                isPressed = true;
+                cout<<"Fire";
+            }else{
+                /*Se supone que recarga pero habra que ver si no genera alguna sobrecarga(Se traba),
+                porque en todo momento se estaria recargando si no se presiona el espacio*/
+                isPressed = false;
+                //cout<<"Recargando";
+            }
+
+            //Si se presiona Ctr+O entonces activa un cheat que lo hace inmortal :) capricho de Aldo
+            if(auto* key=event->getIf<sf::Event::KeyPressed>()){
+                if(key->scancode == sf::Keyboard::Scancode::O){
+                    if(key->control){
+                        cout<<"Ctrl + O";
+                    }
+                }
+            }
+
+            /*Probablemente deberamos agregar teclas de posiciones en las cuales al presionar 2 teclas a la vez
+            se vaya en direccion diagonal dependiendo de la letra, ejemplo A,W = diagonal hacia arriba izquierda*/
+
+            //Fin de manejo de teclas
+
+
+
+
+            //Cuando se presiona el boton de cerrar se cierra la ventana
             if (event->is<sf::Event::Closed>())
-                window.close();
+                //Cierra la ventana
+                ventana.close();
         }
+        //Cambia el color de la ventana
+        ventana.clear(sf::Color::Black);
 
-        window.clear();
-        window.draw(shape);
-        window.display();
+        //Muestra el cambio de color
+        ventana.display();
+
     }
-    menu();
-    return 0;
+
+    return EXIT_SUCCESS;
 }
-
-void menu(){
-    Players datos[TAM];
-    int opc=0;
-    do{
-        cout<<"ASTEROIDS"<<endl;
-        cout<<"Start!..................1"<<endl; //por ahora, el menu se maneja como entradas de numeros
-        cout<<"Add player..............2"<<endl;
-        cout<<"Scores..................3"<<endl;
-        cout<<"Exit....................4"<<endl;
-        cin>>opc;
-        switch (opc)
-        {
-        case 1:
-            // llamar a funcion game
-            break;
-        case 2:
-            addPlayer(datos);
-            break;
-        case 3:
-            //llamar a funcion showCounter
-            break;
-        case 4:
-            cout<<"Exiting... Thanks 4 playing!!"<<endl;
-        default:
-            cout<<"Invalid option. Try again."<<endl;
-            break;
-        }
-    }while(opc!=4);
-}//menu
-
-void game(){
-    cout<<"Prueba :)"<<endl;
-}
-
-void addPlayer(Players datos[]){
-    if(tope<=TAM){
-        cout<<"Introduce your nickname: ";
-        cin>>datos[tope].nombre; //tope sirve como auxiliar para que tengamos control sobre la cant de jugadores
-        tope++;
-    }
-    else{
-        cout<<"Not enough space. Please try again later."<<endl;
-    }
-}//addPlayers
