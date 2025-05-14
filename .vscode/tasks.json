@@ -1,0 +1,33 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build SFML",
+            "type": "cppbuild",
+            "command": "g++",
+            "args": [
+                "-g",
+                "C:\\Users\\aldom\\Documents\\ProyectoFinal3Parcial\\Equipo-11\\Game\\asteroidsNex.cpp",
+                "-o",
+                "C:\\Users\\aldom\\Documents\\ProyectoFinal3Parcial\\Equipo-11\\Game\\asteroidsNex.exe",
+                "-I",
+                "C:\\Users\\aldom\\Documents\\SFML-3.0.0X\\SFML-3.0.0\\include",
+                "-L",
+                "C:\\Users\\aldom\\Documents\\SFML-3.0.0X\\SFML-3.0.0\\lib",
+                "-lsfml-graphics",
+                "-lsfml-window",
+                "-lsfml-system"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true // ¡Esta línea es crucial!
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "presentation": {
+                "reveal": "always"
+            }
+        }
+    ]
+}
