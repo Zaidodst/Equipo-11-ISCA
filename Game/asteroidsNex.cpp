@@ -1,11 +1,18 @@
 /*
 Space Asteroids Game
-- SFML 2.6.1
+- SFML 2.6.1    
+PROYECTO FINAL DE PROGRAMACION 1. ASTEROIDES
+INTEGRANTES:
+ZAID DE LA ROSA CASTILLO
+GARCIA FIGUEROA ALDO MANUEL
+MUÑOZ ROMO OSWALDO EMMANUEL
 */
 
 #include <SFML/Graphics.hpp>
 #include <SFML/System.hpp>
 #include <cmath>
+
+using namespace std;
 
 const int ANCHO_VENTANA = 800;
 const int ALTO_VENTANA = 600;
@@ -52,8 +59,15 @@ struct Nave {
         forma.setRotation(rotacion);
     }
 
-    void rotarIzquierda(float dt) { rotacion -= velocidadRotacion * dt; if (rotacion < 0) rotacion += 360.f; }
-    void rotarDerecha(float dt) { rotacion += velocidadRotacion * dt; if (rotacion >= 360.f) rotacion -= 360.f; }
+    void rotarIzquierda(float dt) { 
+        rotacion -= velocidadRotacion * dt; 
+        if (rotacion < 0) rotacion += 360.f; 
+    }
+    
+    void rotarDerecha(float dt) { 
+        rotacion += velocidadRotacion * dt; 
+        if (rotacion >= 360.f) rotacion -= 360.f; 
+    }
     
     void moverAdelante(float dt) {
         sf::Vector2f direccion(std::sin(gradosARadianes(rotacion)), -std::cos(gradosARadianes(rotacion)));
@@ -69,7 +83,7 @@ struct Nave {
     
     bool puedeDisparar() { return temporizadorEnfriamiento <= 0.f; }
     
-    void disparar(std::vector<struct Misil>& misiles) {
+    void disparar(vector<struct Misil>& misiles) {
         if (puedeDisparar()) {
             sf::Vector2f direccion(std::sin(gradosARadianes(rotacion)), -std::cos(gradosARadianes(rotacion)));
             misiles.emplace_back(posicion + direccion * 20.f, direccion * 500.f);
@@ -136,8 +150,8 @@ struct Asteroide {
         forma.setPosition(posicion);
     }
 
-    std::vector<Asteroide> dividir() {
-        std::vector<Asteroide> hijos;
+    vector<Asteroide> dividir() {
+        vector<Asteroide> hijos;
         if (nivelTamano > 1) {
             float nuevoRadio = radio / 2.f;
             sf::Vector2f velPerp(-velocidad.y, velocidad.x);
@@ -158,7 +172,7 @@ class Boton {
     sf::Color colorHover = sf::Color(70,130,180);
 
 public:
-    Boton(sf::Vector2f pos, sf::Vector2f tam, sf::Font& fuente, std::string str) {
+    Boton(sf::Vector2f pos, sf::Vector2f tam, sf::Font& fuente, string str) {
         rectangulo.setSize(tam);
         rectangulo.setPosition(pos);
         rectangulo.setFillColor(colorNormal);
@@ -178,7 +192,9 @@ public:
     }
 
     void dibujar(sf::RenderWindow& ventana) { ventana.draw(rectangulo); ventana.draw(texto); }
-    bool fueClickeado(sf::Vector2f mousePos) { return rectangulo.getGlobalBounds().contains(mousePos); }
+    bool fueClickeado(sf::Vector2f mousePos) { 
+        return rectangulo.getGlobalBounds().contains(mousePos);
+    }
 };
 
 // Estados del juego
@@ -190,7 +206,7 @@ int main() {
 
     sf::Font fuente;
     if (!fuente.loadFromFile("Doctor Glitch.otf")) {
-        // Manejar error de carga de fuente
+        return EXIT_FAILURE;
     }
 
     // Elementos del juego
@@ -200,8 +216,8 @@ int main() {
     
     EstadoJuego estado = EstadoJuego::MENU;
     Nave nave;
-    std::vector<Misil> misiles;
-    std::vector<Asteroide> asteroides;
+    vector<Misil> misiles;
+    vector<Asteroide> asteroides;
     sf::Clock reloj;
 
     // Inicializar asteroides
@@ -222,17 +238,16 @@ int main() {
     textoGuardadas.setPosition(200, 250);
     textoGuardadas.setFillColor(sf::Color::White);
 
-    sf::Text textoFPS("", fuente, 14);
-    textoFPS.setPosition(10, 10);
-    textoFPS.setFillColor(sf::Color::Yellow);
-
     // Bucle principal
     while (ventana.isOpen()) {
         float dt = reloj.restart().asSeconds();
+        
         sf::Event evento;
         
         while (ventana.pollEvent(evento)) {
-            if (evento.type == sf::Event::Closed) ventana.close();
+            if (evento.type == sf::Event::Closed) {
+                ventana.close();
+            }
 
             if (estado == EstadoJuego::MENU && evento.type == sf::Event::MouseButtonPressed) {
                 sf::Vector2f mousePos = ventana.mapPixelToCoords(sf::Mouse::getPosition(ventana));
@@ -242,12 +257,17 @@ int main() {
                     misiles.clear();
                     initAsteroides();
                 }
-                else if (botonGuardadas.fueClickeado(mousePos)) estado = EstadoJuego::PARTIDAS_GUARDADAS;
-                else if (botonSalir.fueClickeado(mousePos)) estado = EstadoJuego::SALIR;
+                else if (botonGuardadas.fueClickeado(mousePos)) {
+                    estado = EstadoJuego::PARTIDAS_GUARDADAS;
+                }
+                else if (botonSalir.fueClickeado(mousePos)) {
+                    estado = EstadoJuego::SALIR;
+                }
             }
             else if (evento.type == sf::Event::KeyPressed && evento.key.code == sf::Keyboard::Escape) {
-                if (estado == EstadoJuego::PARTIDAS_GUARDADAS || estado == EstadoJuego::JUGANDO)
+                if (estado == EstadoJuego::PARTIDAS_GUARDADAS || estado == EstadoJuego::JUGANDO) {
                     estado = EstadoJuego::MENU;
+                }
             }
         }
 
@@ -271,14 +291,18 @@ int main() {
             // Actualizar misiles
             for (auto it = misiles.begin(); it != misiles.end();) {
                 it->actualizar(dt);
-                it = it->estaMuerto() ? misiles.erase(it) : ++it;
+                if (it->estaMuerto()) {
+                    it = misiles.erase(it);
+                } else {
+                    ++it;
+                }
             }
 
             // Actualizar asteroides
             for (auto& a : asteroides) a.actualizar(dt);
 
             // Colisiones
-            std::vector<Asteroide> nuevosAsteroides;
+            vector<Asteroide> nuevosAsteroides;
             for (auto mit = misiles.begin(); mit != misiles.end();) {
                 bool colision = false;
                 for (auto ait = asteroides.begin(); ait != asteroides.end();) {
@@ -289,7 +313,9 @@ int main() {
                         mit = misiles.erase(mit);
                         colision = true;
                         break;
-                    } else ++ait;
+                    } else {
+                        ++ait;
+                    }
                 }
                 if (!colision) ++mit;
             }
