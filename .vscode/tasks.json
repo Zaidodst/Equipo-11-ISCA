@@ -11,9 +11,9 @@
                 "-o",
                 "C:\\Users\\aldom\\Documents\\ProyectoFinal3Parcial\\Equipo-11\\Game\\asteroidsNex.exe",
                 "-I",
-                "C:\\Users\\aldom\\Documents\\SFML-3.0.0X\\SFML-3.0.0\\include",
+                "C:\\Users\\aldom\\Documents\\ArchivosSMFL2.6.1\\SFML-2.6.1\\include",
                 "-L",
-                "C:\\Users\\aldom\\Documents\\SFML-3.0.0X\\SFML-3.0.0\\lib",
+                "C:\\Users\\aldom\\Documents\\ArchivosSMFL2.6.1\\SFML-2.6.1\\lib",
                 "-lsfml-graphics",
                 "-lsfml-window",
                 "-lsfml-system"
