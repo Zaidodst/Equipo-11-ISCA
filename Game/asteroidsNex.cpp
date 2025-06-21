@@ -10,6 +10,7 @@ MUÑOZ ROMO OSWALDO EMMANUEL
 #include <SFML/Graphics.hpp> // Librería para gráficos
 #include <SFML/System.hpp>
 #include <SFML/Audio.hpp> // Librería para audio
+#include <string> // Libreria que nos funciona para las vidas
 #include <iostream>
 #include <vector>
 #include <cmath>
@@ -37,6 +38,10 @@ sf::Vector2f normalizar(sf::Vector2f v) {
 
 // Estructura de la Nave Espacial
 struct Nave {
+    //Creacion de estadisticas de la nave para saber si hubo fin de juego
+    int vidas = 2;
+    bool gameOver = false;
+
     sf::ConvexShape forma;
     sf::Vector2f posicion;
     float rotacion;
@@ -326,6 +331,7 @@ int main() {
             botonGuardadas.actualizar(mousePos);
             botonSalir.actualizar(mousePos);
         }
+        //Juedo en estado jugando
         else if (estado == EstadoJuego::JUGANDO) {
             // Controles
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Q)) nave.rotarIzquierda(dt);
@@ -335,6 +341,13 @@ int main() {
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) nave.moverDerecha(dt);
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) nave.moverAtras(dt);
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space)) nave.disparar(misiles);
+            if (nave.gameOver && sf::Keyboard::isKeyPressed(sf::Keyboard::R)) {
+                // Reinicia todo el juego
+                nave = Nave(); // Reinicia nave (vidas=2, gameOver=false)
+                misiles.clear();
+                asteroides.clear();
+                initAsteroides(asteroides); // Vuelve a generar asteroides
+            }
 
             nave.actualizar(dt);
 
@@ -351,7 +364,24 @@ int main() {
             // Actualizar asteroides
             for (auto& a : asteroides) a.actualizar(dt);
 
-            // Colisiones
+            //Deteccion de colision Nave-Asteroide
+            for (auto& asteroide : asteroides) {
+                if (longitudVector(nave.posicion - asteroide.posicion) < asteroide.radio + 15) {
+                    nave.vidas--;
+                    if (nave.vidas <= 0) {
+                        nave.gameOver = true;
+                    } else {
+                        // Reiniciar posición de la nave (opcional)
+                        nave.posicion = sf::Vector2f(ANCHO_VENTANA / 2.f, ALTO_VENTANA / 2.f);
+                        nave.velocidad = sf::Vector2f(0, 0);
+                    }
+                    break; // Romper el bucle para evitar múltiples colisiones en un frame
+                }
+            }
+            //Fin de la deteccion de colision Nave-Asteroide
+
+
+            // Colisiones Misil-Asteroide
             vector<Asteroide> nuevosAsteroides;
             for (auto mit = misiles.begin(); mit != misiles.end();) {
                 bool colision = false;
@@ -394,8 +424,34 @@ int main() {
             ventana.draw(nave.forma);
             for (auto& m : misiles) ventana.draw(m.forma);
             for (auto& a : asteroides) ventana.draw(a.forma);
-        }
 
+            //Dibujar vidas en pantalla
+            // ====== MOSTRAR VIDAS (PUNTO 4) ======
+            sf::Text textoVidas("Vidas: " + std::to_string(nave.vidas), fuente, 24);
+            textoVidas.setFillColor(sf::Color::White);
+            textoVidas.setPosition(20, 20);  // Esquina superior izquierda
+            ventana.draw(textoVidas);
+            // ====== FIN DEL CONTADOR DE VIDAS ======
+
+
+            // ====== PANTALLA DE GAME OVER ======
+            if (nave.gameOver) {
+                sf::Text textoGameOver("GAME OVER", fuente, 60);
+                textoGameOver.setFillColor(sf::Color::Red);
+                textoGameOver.setOrigin(textoGameOver.getLocalBounds().width / 2, textoGameOver.getLocalBounds().height / 2);
+                textoGameOver.setPosition(ANCHO_VENTANA / 2, ALTO_VENTANA / 2 - 50);
+
+                sf::Text textoReiniciar("Presiona R para reiniciar", fuente, 24);
+                textoReiniciar.setFillColor(sf::Color::White);
+                textoReiniciar.setOrigin(textoReiniciar.getLocalBounds().width / 2, textoReiniciar.getLocalBounds().height / 2);
+                textoReiniciar.setPosition(ANCHO_VENTANA / 2, ALTO_VENTANA / 2 + 50);
+
+                ventana.draw(textoGameOver);
+                ventana.draw(textoReiniciar);
+            }
+            // FIN DE PANTALLA GAME OVER
+        }
+        
         if (estado == EstadoJuego::SALIR) ventana.close();
         ventana.display();
     }
