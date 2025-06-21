@@ -4,14 +4,14 @@
             "name": "Win32",
             "includePath": [
                 "${workspaceFolder}/**",
-                "C:\\Users\\aldom\\Documents\\SFML-3.0.0X\\SFML-3.0.0\\include"
+                "C:\\Users\\aldom\\Documents\\ArchivosSMFL2.6.1\\SFML-2.6.1\\include"
             ],
             "defines": [
                 "_DEBUG",
                 "UNICODE",
                 "_UNICODE"
             ],
-            "compilerPath": "C:\\Users\\aldom\\Documents\\mingw64\\mingw64\\bin\\gcc.exe",
+            "compilerPath": "C:\\Users\\aldom\\Documents\\ArchivosSMFL2.6.1\\mingw64\\bin\\gcc.exe",
             "cStandard": "c17",
             "cppStandard": "gnu++17",
             "intelliSenseMode": "windows-gcc-x64"
