@@ -15,6 +15,7 @@
                 "-L",
                 "C:\\Users\\aldom\\Documents\\ArchivosSMFL2.6.1\\SFML-2.6.1\\lib",
                 "-lsfml-graphics",
+                "-lsfml-audio",
                 "-lsfml-window",
                 "-lsfml-system"
             ],
