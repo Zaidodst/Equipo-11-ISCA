@@ -3,7 +3,7 @@ PROYECTO FINAL DE PROGRAMACION 1. ASTEROIDES
 INTEGRANTES:
 ZAID DE LA ROSA CASTILLO
 GARCIA FIGUEROA ALDO MANUEL
-MUÑOZ ROMO OSWALDO EMMANUEL    
+MUÑOZ ROMO OSWALDO EMMANUEL
 */
 
 
@@ -455,6 +455,8 @@ int main() {
         if (estado == EstadoJuego::SALIR) ventana.close();
         ventana.display();
     }
+
+    //Prueba
 
     return 0; // Fin del programa
 } // Fin del programa
