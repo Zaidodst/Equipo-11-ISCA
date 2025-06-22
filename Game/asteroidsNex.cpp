@@ -6,7 +6,7 @@ GARCIA FIGUEROA ALDO MANUEL
 MUÑOZ ROMO OSWALDO EMMANUEL
 NAVARRO REYES DANIEL ISAI    
 */
-
+//ponganos 10 maestra :)
 
 #include <SFML/Graphics.hpp> // Librería para gráficos
 #include <SFML/System.hpp>
