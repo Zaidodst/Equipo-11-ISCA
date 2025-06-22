@@ -6,7 +6,6 @@ GARCIA FIGUEROA ALDO MANUEL
 MUÑOZ ROMO OSWALDO EMMANUEL
 */
 
-
 #include <SFML/Graphics.hpp> // Librería para gráficos
 #include <SFML/System.hpp>
 #include <SFML/Audio.hpp> // Librería para audio
@@ -16,6 +15,10 @@ MUÑOZ ROMO OSWALDO EMMANUEL
 #include <cmath>
 
 using namespace std;
+
+//Variables globales
+sf::Texture texturaNave;
+sf::Texture texturaAsteroide;
 
 // Constantes de la ventana
 const int ANCHO_VENTANA = 800;
@@ -42,7 +45,7 @@ struct Nave {
     int vidas = 2;
     bool gameOver = false;
 
-    sf::ConvexShape forma;
+    sf::Sprite sprite;
     sf::Vector2f posicion;
     float rotacion;
     sf::Vector2f velocidad;
@@ -52,14 +55,10 @@ struct Nave {
     float temporizadorEnfriamiento = 0.f;
 
     Nave() : posicion(ANCHO_VENTANA / 2.f, ALTO_VENTANA / 2.f), rotacion(0.f) {
-        forma.setPointCount(3);
-        forma.setPoint(0, sf::Vector2f(0, -15));
-        forma.setPoint(1, sf::Vector2f(10, 10));
-        forma.setPoint(2, sf::Vector2f(-10, 10));
-        forma.setFillColor(sf::Color::White);
-        forma.setOutlineColor(sf::Color::Cyan);
-        forma.setOutlineThickness(2);
-        forma.setOrigin(0, 0);
+        sprite.setTexture(texturaNave);
+        sprite.setOrigin(texturaNave.getSize().x / 2.f, texturaNave.getSize().y / 2.f); // Centro del sprite
+        sprite.setPosition(posicion);
+        sprite.scale(0.06f,0.06f);
     }
 
     void actualizar(float dt) {
@@ -72,8 +71,8 @@ struct Nave {
         if (posicion.y < 0) posicion.y += ALTO_VENTANA;
         if (posicion.y > ALTO_VENTANA) posicion.y -= ALTO_VENTANA;
 
-        forma.setPosition(posicion);
-        forma.setRotation(rotacion);
+        sprite.setPosition(posicion);
+        sprite.setRotation(rotacion);
     } // Actualiza la posición y rotación de la nave
 
     void rotarIzquierda(float dt) {
@@ -94,8 +93,8 @@ struct Nave {
 
     void moverIzquierda(float dt) {
         velocidad += sf::Vector2f(
-            -std::cos(gradosARadianes(rotacion)),  // -direccion.y (porque direccion.y = -cos)
-            -std::sin(gradosARadianes(rotacion))   // direccion.x
+            -std::cos(gradosARadianes(rotacion)),
+            -std::sin(gradosARadianes(rotacion))  
         ) * velocidadMax * dt * 0.5f;
 
         if (longitudVector(velocidad) > velocidadMax)
@@ -119,6 +118,7 @@ struct Nave {
     } // Mueve la nave hacia atrás
 
     bool puedeDisparar() {
+        //Si a este se le aumenta el numero, ya sea 4.f, se puede disparar con hacks
         return temporizadorEnfriamiento <= 0.f; // Verifica si la nave puede disparar
     } // Verifica si la nave puede disparar
 
@@ -164,19 +164,19 @@ struct Misil {
 
 // Estructura de Asteroide
 struct Asteroide {
-    sf::CircleShape forma;
+    sf::Sprite sprite;
     sf::Vector2f posicion;
     sf::Vector2f velocidad;
     float radio;
-    int nivelTamano;
+    int nivelTamano; // 3=grande, 2=mediano, 1=chico
 
     Asteroide(sf::Vector2f pos, sf::Vector2f vel, float r, int tamano)
         : posicion(pos), velocidad(vel), radio(r), nivelTamano(tamano) {
-        forma.setRadius(radio);
-        forma.setFillColor(sf::Color(150, 150, 150));
-        forma.setOutlineColor(sf::Color::White);
-        forma.setOutlineThickness(2);
-        forma.setOrigin(radio, radio);
+        sprite.setTexture(texturaAsteroide);
+        sprite.setOrigin(texturaAsteroide.getSize().x / 2.f, texturaAsteroide.getSize().y / 2.f);
+        sprite.setPosition(posicion);
+        float escala = 0.06f * nivelTamano; //Sirve como apoyo para la division de asteroides
+        sprite.setScale(escala, escala);  // Ajusta la escala del asteroide
     }
 
     void actualizar(float dt) {
@@ -188,7 +188,8 @@ struct Asteroide {
         if (posicion.y < 0) posicion.y += ALTO_VENTANA;
         if (posicion.y > ALTO_VENTANA) posicion.y -= ALTO_VENTANA;
 
-        forma.setPosition(posicion);
+        sprite.setPosition(posicion);
+        sprite.rotate(1.f);  // Rotación automática
     } // Actualiza la posición del asteroide
 
     vector<Asteroide> dividir() {
@@ -197,7 +198,10 @@ struct Asteroide {
             float nuevoRadio = radio / 2.f;
             sf::Vector2f velPerp(-velocidad.y, velocidad.x);
             if (longitudVector(velPerp) < 0.1f) velPerp = sf::Vector2f(50.f, -50.f);
-            velPerp = normalizar(velPerp) * (longitudVector(velocidad) + 20.f);
+            //Aumenta la velocidad de los asteroides divididos (Tienes que aumentar el +)
+            velPerp = normalizar(velPerp) * (longitudVector(velocidad) + 150.f);
+
+            //Hace que los asteroides divididos salgan hacia distintos lugares
             hijos.emplace_back(posicion, (velocidad + velPerp) * 0.7f, nuevoRadio, nivelTamano - 1);
             hijos.emplace_back(posicion, (velocidad - velPerp) * 0.7f, nuevoRadio, nivelTamano - 1);
         }
@@ -246,19 +250,37 @@ public:
 enum class EstadoJuego { MENU, PARTIDAS_GUARDADAS, JUGANDO, SALIR };
 
 // Función para inicializar asteroides
-void initAsteroides(vector<Asteroide>& asteroides) {
+void initAsteroides(vector<Asteroide>& asteroides, const sf::Vector2f& posicionNave) {
     asteroides.clear();
-    for (int i = 0; i < 5; i++) {
-        sf::Vector2f pos(rand() % ANCHO_VENTANA, rand() % ALTO_VENTANA);
+    float radioExclusion = 100.0f;
+    for (int i = 0; i < 4; i++) {
+        sf::Vector2f pos;
+        float distanciaANave;
+        /*Genera posiciones aleatorias hasta que estén fuera de la nave, esto para evitar
+        un Game Over inmediato*/
+        do {
+            pos.x = rand() % ANCHO_VENTANA;
+            pos.y = rand() % ALTO_VENTANA;
+            distanciaANave = longitudVector(pos - posicionNave);
+        } while (distanciaANave < radioExclusion);
+
         sf::Vector2f vel((rand() % 200 - 100) / 10.f, (rand() % 200 - 100) / 10.f);
         if (vel == sf::Vector2f(0, 0)) vel = {10.f, 15.f};
         asteroides.emplace_back(pos, vel, 60.f, 3);
     }
 } // Inicializa los asteroides
 
+
+//Main principal (Importante)
 int main() {
     sf::RenderWindow ventana(sf::VideoMode(ANCHO_VENTANA, ALTO_VENTANA), "Asteroids Space", sf::Style::Close);
     ventana.setFramerateLimit(60);
+
+    //Cargar las imagenes de la nave y los asteroides
+    if (!texturaNave.loadFromFile("nave.png") || !texturaAsteroide.loadFromFile("asteroide.png")) {
+    std::cerr << "Error cargando texturas\n";
+    return -1;
+}
 
     sf::Font fuente;
     if (!fuente.loadFromFile("Doctor Glitch.otf")) {
@@ -266,17 +288,19 @@ int main() {
     }
 
     // Elementos del juego
-    Boton botonIniciar({300, 200}, {200, 50}, fuente, "Iniciar");
-    Boton botonGuardadas({300, 280}, {200, 50}, fuente, "Partidas guardadas");
-    Boton botonSalir({300, 360}, {200, 50}, fuente, "Salir");
+    Boton botonIniciar({240, 200}, {320, 50}, fuente, "Iniciar");
+    Boton botonGuardadas({240, 280}, {320, 50}, fuente, "Scores guardados");
+    Boton botonSalir({240, 360}, {320, 50}, fuente, "Salir");
 
     EstadoJuego estado = EstadoJuego::MENU;
     Nave nave;
+
+    //Vectores
     vector<Misil> misiles;
     vector<Asteroide> asteroides;
     sf::Clock reloj;
 
-    initAsteroides(asteroides); // Inicializa asteroides
+    initAsteroides(asteroides, nave.posicion); // Inicializa asteroides
 
     // Textos
     sf::Text textoGuardadas("No hay partidas guardadas", fuente, 26);
@@ -308,7 +332,7 @@ int main() {
                     estado = EstadoJuego::JUGANDO;
                     nave = Nave();
                     misiles.clear();
-                    initAsteroides(asteroides);
+                    initAsteroides(asteroides, nave.posicion);
                 }
                 else if (botonGuardadas.fueClickeado(mousePos)) {
                     estado = EstadoJuego::PARTIDAS_GUARDADAS;
@@ -346,7 +370,7 @@ int main() {
                 nave = Nave(); // Reinicia nave (vidas=2, gameOver=false)
                 misiles.clear();
                 asteroides.clear();
-                initAsteroides(asteroides); // Vuelve a generar asteroides
+                initAsteroides(asteroides,nave.posicion); // Vuelve a generar asteroides
             }
 
             nave.actualizar(dt);
@@ -421,9 +445,9 @@ int main() {
             ventana.draw(textoGuardadas);
         }
         else if (estado == EstadoJuego::JUGANDO) {
-            ventana.draw(nave.forma);
+            ventana.draw(nave.sprite);
             for (auto& m : misiles) ventana.draw(m.forma);
-            for (auto& a : asteroides) ventana.draw(a.forma);
+            for (auto& a : asteroides) ventana.draw(a.sprite);
 
             //Dibujar vidas en pantalla
             // ====== MOSTRAR VIDAS (PUNTO 4) ======
@@ -431,11 +455,14 @@ int main() {
             textoVidas.setFillColor(sf::Color::White);
             textoVidas.setPosition(20, 20);  // Esquina superior izquierda
             ventana.draw(textoVidas);
-            // ====== FIN DEL CONTADOR DE VIDAS ======
+            //FIN DEL CONTADOR DE VIDAS
 
 
             // ====== PANTALLA DE GAME OVER ======
             if (nave.gameOver) {
+                //Poner fondo en negro, en la pantalla Game Over
+                ventana.clear(sf::Color::Black);
+
                 sf::Text textoGameOver("GAME OVER", fuente, 60);
                 textoGameOver.setFillColor(sf::Color::Red);
                 textoGameOver.setOrigin(textoGameOver.getLocalBounds().width / 2, textoGameOver.getLocalBounds().height / 2);
@@ -448,6 +475,8 @@ int main() {
 
                 ventana.draw(textoGameOver);
                 ventana.draw(textoReiniciar);
+                ventana.display();
+                continue;
             }
             // FIN DE PANTALLA GAME OVER
         }
