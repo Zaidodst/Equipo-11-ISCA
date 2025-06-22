@@ -4,7 +4,7 @@ INTEGRANTES:
 ZAID DE LA ROSA CASTILLO
 GARCIA FIGUEROA ALDO MANUEL
 MUÑOZ ROMO OSWALDO EMMANUEL
-NAVARRO REYES DANIEL ISAI    
+NAVARRO REYES DANIEL ISAI
 */
 
 
@@ -456,6 +456,8 @@ int main() {
         if (estado == EstadoJuego::SALIR) ventana.close();
         ventana.display();
     }
+
+    //Prueba
 
     return 0; // Fin del programa
 } // Fin del programa
