@@ -496,9 +496,8 @@ int main() {
             textoVolver.setFillColor(sf::Color::Yellow);
             textoVolver.setPosition(200,500);
             ventana.draw(textoVolver);
-        }
-        }
-        else if (estado == EstadoJuego::JUGANDO) {
+        } else{
+            if (estado == EstadoJuego::JUGANDO) {
             ventana.draw(nave.sprite);
             for (auto& m : misiles) ventana.draw(m.forma);
             for (auto& a : asteroides) ventana.draw(a.sprite);
