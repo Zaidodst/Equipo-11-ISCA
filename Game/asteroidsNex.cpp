@@ -295,6 +295,31 @@ void initAsteroides(vector<Asteroide>& asteroides, const sf::Vector2f& posicionN
     }
 } // Inicializa los asteroides
 
+// Guardar la puntuacion
+void guardarPuntuacion(int puntos){
+    std::ofstream archivo("puntuaciones.txt",std::ios::app);
+    if(archivo.is_open()){
+        archivo<<"Puntuacion: "<<puntos<<endl;
+        archivo.close();
+    }
+}
+
+// Leer puntuaciones
+vector<string> leerPuntuaciones(){
+    vector<string> lineas;
+    std::ifstream archivo("puntuaciones.txt");
+    std::string linea;
+
+    if(archivo.is_open()){
+        while(getline(archivo, linea)){
+            lineas.push_back(linea);
+        }
+        archivo.close();
+    }else{
+        lineas.push_back("No se pudo leer el archivo.");
+    }
+    return lineas;
+}
 
 //############################
 //############################
@@ -336,10 +361,12 @@ int main() {
 
     EstadoJuego estado = EstadoJuego::MENU;
     Nave nave;
+    int puntuacion=0;
 
     //Vectores
     vector<Misil> misiles;
     vector<Asteroide> asteroides;
+    vector<string> puntuacionesGuardadads;
     sf::Clock reloj;
 
     initAsteroides(asteroides, nave.posicion); // Inicializa asteroides
@@ -423,6 +450,7 @@ int main() {
                 }
                 else if (botonGuardadas.fueClickeado(mousePos)) {
                     estado = EstadoJuego::PARTIDAS_GUARDADAS;
+                    puntuacionesGuardadads=leerPuntuaciones(); // Cargar las puntuaciones
                 }
                 else if (botonSalir.fueClickeado(mousePos)) {
                     estado = EstadoJuego::SALIR;
@@ -519,6 +547,7 @@ int main() {
                         
                         auto hijos = ait->dividir();
                         nuevosAsteroides.insert(nuevosAsteroides.end(), hijos.begin(), hijos.end());
+                        puntuacion+=10*ait->nivelTamano;//aumenta puntos
                         ait = asteroides.erase(ait);
                         mit = misiles.erase(mit);
                         colision = true;
