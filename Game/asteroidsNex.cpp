@@ -11,24 +11,43 @@ NAVARRO REYES DANIEL ISAI
 #include <SFML/System.hpp>
 #include <SFML/Audio.hpp> // Librería para audio
 #include <string> // Libreria que nos funciona para las vidas
+#include <fstream> //Libreria para el manejo de archivos
 #include <iostream>
 #include <vector>
 #include <cmath>
-#include <fstream>
-#include <sstream>
 
 using namespace std;
 
 //Variables globales
 sf::Texture texturaNave;
 sf::Texture texturaAsteroide;
+int score = 0;
 
 // Constantes de la ventana
-const int ANCHO_VENTANA = 800;
-const int ALTO_VENTANA = 600;
+const int ANCHO_VENTANA = 1024;
+const int ALTO_VENTANA = 768;
 const float PI = 3.14159265f;
 
 // Funciones de utilidad
+
+//Lee los scores ya guardados en el archivo txt
+string leerScoresGuardados() {
+    std::ifstream archivo("scores.txt");
+    std::string scores;
+    std::string linea;
+
+    if (archivo.is_open()) {
+        while (getline(archivo, linea)) {
+            scores += linea + "\n";  // Agrega cada línea al string
+        }
+        archivo.close();
+    } else {
+        scores = "No hay scores guardados";  // Mensaje si el archivo no existe
+    }
+
+    return scores;
+}
+
 float gradosARadianes(float grados) {
     return grados * PI / 180.f; // Convierte grados a radianes
 } // Convierte grados a radianes
@@ -220,19 +239,22 @@ class Boton {
     sf::Color colorHover = sf::Color(70, 130, 180);
 
 public:
-    Boton(sf::Vector2f pos, sf::Vector2f tam, sf::Font& fuente, string str) {
+    Boton(float porcentajeX, float porcentajeY, sf::Vector2f tam, sf::Font& fuente, string str) {
         rectangulo.setSize(tam);
-        rectangulo.setPosition(pos);
-        rectangulo.setFillColor(colorNormal);
+        // Calcula posición basada en porcentajes:
+        float posX = (porcentajeX / 100.0f) * ANCHO_VENTANA - tam.x / 2;
+        float posY = (porcentajeY / 100.0f) * ALTO_VENTANA - tam.y / 2;
+        rectangulo.setPosition(posX, posY);
 
         texto.setFont(fuente);
         texto.setString(str);
         texto.setCharacterSize(24);
         texto.setFillColor(sf::Color::White);
 
+        // Centra el texto en el botón
         sf::FloatRect bounds = texto.getLocalBounds();
-        texto.setOrigin(bounds.left + bounds.width / 2.f, bounds.top + bounds.height / 2.f);
-        texto.setPosition(pos.x + tam.x / 2.f, pos.y + tam.y / 2.f);
+        texto.setOrigin(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2);
+        texto.setPosition(posX + tam.x / 2, posY + tam.y / 2);
     }
 
     void actualizar(sf::Vector2f mousePos) {
@@ -299,8 +321,25 @@ vector<string> leerPuntuaciones(){
     return lineas;
 }
 
+//############################
+//############################
+//############################
+//############################
 //Main principal (Importante)
 int main() {
+
+    char* nombreJugador = nullptr;
+    int capacidadNombre = 0;
+    int longitudNombre = 0;
+    bool ingresandoNombre = false;
+
+    //Inicializacion de las variables
+    capacidadNombre = 20;
+    //Uso de memoria dinamica para el vector de nombre
+    nombreJugador = new char[capacidadNombre]();
+    nombreJugador[0] = '\0';
+
+    //Creacion de la pantalla con ciertas dimensiones
     sf::RenderWindow ventana(sf::VideoMode(ANCHO_VENTANA, ALTO_VENTANA), "Asteroids Space", sf::Style::Close);
     ventana.setFramerateLimit(60);
 
@@ -316,9 +355,9 @@ int main() {
     }
 
     // Elementos del juego
-    Boton botonIniciar({240, 200}, {320, 50}, fuente, "Iniciar");
-    Boton botonGuardadas({240, 280}, {320, 50}, fuente, "Scores guardados");
-    Boton botonSalir({240, 360}, {320, 50}, fuente, "Salir");
+    Boton botonIniciar(50, 30, sf::Vector2f(320, 50), fuente, "Iniciar");  // Permite centrar el boton
+    Boton botonGuardadas(50, 45, sf::Vector2f(320, 50), fuente, "Partidas guardadas"); // Permite centrar el boton
+    Boton botonSalir(50, 60, sf::Vector2f(320, 50), fuente, "Salir"); // Permite centrar el boton
 
     EstadoJuego estado = EstadoJuego::MENU;
     Nave nave;
@@ -331,11 +370,6 @@ int main() {
     sf::Clock reloj;
 
     initAsteroides(asteroides, nave.posicion); // Inicializa asteroides
-
-    // Textos
-    sf::Text textoGuardadas("No hay partidas guardadas", fuente, 26);
-    textoGuardadas.setPosition(200, 250);
-    textoGuardadas.setFillColor(sf::Color::White);
 
     // Cargar música
     sf::Music musica;
@@ -350,11 +384,61 @@ int main() {
         float dt = reloj.restart().asSeconds();
 
         sf::Event evento;
-
+        
         while (ventana.pollEvent(evento)) {
             if (evento.type == sf::Event::Closed) {
                 ventana.close();
             }
+
+            //Esto sirve para poder ingresar el nombre del jugador a su score
+            if (nave.gameOver && !ingresandoNombre && sf::Keyboard::isKeyPressed(sf::Keyboard::Enter)) {
+                // Puedes empezar a editar el nombre si presionas la tecla enter
+                ingresandoNombre = true;
+                longitudNombre = 0;
+                if (nombreJugador) nombreJugador[0] = '\0'; // Resetea el nombre
+            }
+
+            if (ingresandoNombre && evento.type == sf::Event::TextEntered) {
+                if (evento.text.unicode == '\b' && longitudNombre > 0) {
+                    nombreJugador[--longitudNombre] = '\0';
+                }
+                // Caracteres ASCII válidos (evita Enter/Tab)
+                else if (evento.text.unicode >= 32 && evento.text.unicode < 127 && longitudNombre < capacidadNombre - 1) {
+                    nombreJugador[longitudNombre++] = static_cast<char>(evento.text.unicode);
+                    nombreJugador[longitudNombre] = '\0'; // Null-terminator
+                }
+            } // Fin de ingresar el nombre del jugador
+
+
+            //Guardar score y nombre
+            if (ingresandoNombre && sf::Keyboard::isKeyPressed(sf::Keyboard::Enter) && longitudNombre > 0) {
+                // Guardar en archivo de texto
+                std::ofstream archivo("scores.txt", std::ios::app);  // ios::app No sobreescribe los scores anteriores
+                if (archivo.is_open()) {
+                    archivo << nombreJugador << ": " << score << "\n";  // Ej: "Dani: 350"
+                    archivo.close();
+                }
+
+                //Mensaje de prueba de que se guardo el scor
+                ventana.clear(sf::Color::Black);  // Limpia la pantalla
+                sf::Text textoGuardado("Score guardado!", fuente, 30);
+                textoGuardado.setFillColor(sf::Color::Green);
+                textoGuardado.setOrigin(textoGuardado.getLocalBounds().width / 2, textoGuardado.getLocalBounds().height / 2);
+                textoGuardado.setPosition(ANCHO_VENTANA / 2, ALTO_VENTANA / 2);
+                ventana.draw(textoGuardado);
+                ventana.display();
+                sf::sleep(sf::seconds(2));  // Esto sirve para que solo aparezca por ciertos segundos
+
+                // Reiniciar para nuevo juego
+                ingresandoNombre = false;
+                nave.gameOver = false;
+                score = 0;
+                estado = EstadoJuego::MENU;  // Esto hace que se regrese al menu
+                initAsteroides(asteroides, nave.posicion);  // Reinicia los asteroides
+            }
+            //Fin guardar score
+
+
 
             if (estado == EstadoJuego::MENU && evento.type == sf::Event::MouseButtonPressed) {
                 sf::Vector2f mousePos = ventana.mapPixelToCoords(sf::Mouse::getPosition(ventana));
@@ -398,12 +482,14 @@ int main() {
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space)) nave.disparar(misiles);
             if (nave.gameOver && sf::Keyboard::isKeyPressed(sf::Keyboard::R)) {
                 // Reinicia todo el juego
-                guardarPuntuacion(puntuacion); //Guarda la puntuacion en el archivo
-                puntuacion=0;// Reinicia puntuacion en 0
-                nave = Nave(); // Reinicia nave (vidas=2, gameOver=false)
-                misiles.clear();
-                asteroides.clear();
-                initAsteroides(asteroides,nave.posicion); // Vuelve a generar asteroides
+                //Condicion agregada para que no genere error al poner "r" en un nombre
+                if(!ingresandoNombre){
+                    nave = Nave(); // Reinicia nave (vidas=2, gameOver=false)
+                    misiles.clear(); //Limpia los misiles
+                    asteroides.clear(); //Limpia los asteriodes
+                    score=0; //Resetea el score
+                    initAsteroides(asteroides,nave.posicion); // Vuelve a generar asteroides
+                }
             }
 
             nave.actualizar(dt);
@@ -428,7 +514,7 @@ int main() {
                     if (nave.vidas <= 0) {
                         nave.gameOver = true;
                     } else {
-                        // Reiniciar posición de la nave (opcional)
+                        // Reiniciar posición de la nave
                         nave.posicion = sf::Vector2f(ANCHO_VENTANA / 2.f, ALTO_VENTANA / 2.f);
                         nave.velocidad = sf::Vector2f(0, 0);
                     }
@@ -444,6 +530,21 @@ int main() {
                 bool colision = false;
                 for (auto ait = asteroides.begin(); ait != asteroides.end();) {
                     if (longitudVector(mit->posicion - ait->posicion) < ait->radio) {
+                        //Contador de score
+                        //Solo sumar puntos si aun no hay GameOver
+                        if(!nave.gameOver){
+                            switch (ait->nivelTamano) {
+                                case 3: score += 20; break;  // Asteroide grande +20
+                                case 2: score += 50; break;  // Asteroide mediano +50
+                                case 1: score += 100; break; // Asteroide pequeño +100
+                            }//Fin del contador del score
+                        }
+
+                        //Condicion para que no se pueda pasar de cierta cantidad de puntos
+                        if(score>99990){
+                            score=0;
+                        }
+                        
                         auto hijos = ait->dividir();
                         nuevosAsteroides.insert(nuevosAsteroides.end(), hijos.begin(), hijos.end());
                         puntuacion+=10*ait->nivelTamano;//aumenta puntos
@@ -460,7 +561,7 @@ int main() {
             asteroides.insert(asteroides.end(), nuevosAsteroides.begin(), nuevosAsteroides.end());
         }
 
-        // Dibujado
+        // Dibujo de pantalla (Importantisimo)
         ventana.clear(sf::Color(10, 10, 30));
 
         if (estado == EstadoJuego::MENU) {
@@ -476,64 +577,79 @@ int main() {
             ventana.draw(titulo);
         }
         else if (estado == EstadoJuego::PARTIDAS_GUARDADAS) {
-            if(puntuacionesGuardadads.empty()){
-                sf::Text texto("No hay partidas guardadas",fuente,26);
-                texto.setPosition(200,250);
-                texto.setFillColor(sf::Color::White);
-                ventana.draw(texto);
-            }else{
-                float y=150;
-                for(const string& linea : puntuacionesGuardadads){
-                    sf::Text texto(linea, fuente, 24);
-                    texto.setPosition(200, y);
-                    texto.setFillColor(sf::Color::White);
-                    ventana.draw(texto);
-                    y+=30;
-                }
-            }
-            // Instruccion para volver
-            sf::Text textoVolver("Presiona ESC para volver al menu", fuente,20);
-            textoVolver.setFillColor(sf::Color::Yellow);
-            textoVolver.setPosition(200,500);
-            ventana.draw(textoVolver);
-        } else{
-            if (estado == EstadoJuego::JUGANDO) {
+            // Título
+            sf::Text titulo("Partidas Guardadas", fuente, 48);
+            titulo.setFillColor(sf::Color::Cyan);
+            titulo.setOrigin(titulo.getLocalBounds().width / 2, 0);
+            titulo.setPosition(ANCHO_VENTANA / 2, 50);
+            ventana.draw(titulo);
+
+            // Leer y mostrar scores
+            sf::Text textoScore(leerScoresGuardados(), fuente, 24);
+            textoScore.setFillColor(sf::Color::White);
+            textoScore.setPosition(100, 150);  // Posición ajustable
+            ventana.draw(textoScore);
+
+
+        }
+        else if (estado == EstadoJuego::JUGANDO) {
             ventana.draw(nave.sprite);
             for (auto& m : misiles) ventana.draw(m.forma);
             for (auto& a : asteroides) ventana.draw(a.sprite);
 
-            //Dibujar vidas en pantalla
-            // ====== MOSTRAR VIDAS (PUNTO 4) ======
+            // Mostrar vidas
             sf::Text textoVidas("Vidas: " + std::to_string(nave.vidas), fuente, 24);
             textoVidas.setFillColor(sf::Color::White);
             textoVidas.setPosition(20, 20);  // Esquina superior izquierda
             ventana.draw(textoVidas);
-            //FIN DEL CONTADOR DE VIDAS
-            
-            //Dibujar puntuacion en pantalla
-            // ===== MOSTAR PUNTOS ======
-            sf::Text textoPuntaje("Puntos: ="+std::to_string(puntuacion),fuente, 24);
-            textoPuntaje.setFillColor(sf::Color::White);
-            textoPuntaje.setPosition(20, 50);
-            ventana.draw(textoPuntaje);
-            // ===== FIN DEL CONTADOR DE PUNTOS ======
-            
-            // ====== PANTALLA DE GAME OVER ======
+            //Fin del contador de vidas
+
+            sf::Text textoScore("Score: " + std::to_string(score), fuente, 24);
+            textoScore.setFillColor(sf::Color::Yellow);
+            textoScore.setPosition(ANCHO_VENTANA -240, 20); //Pone el score arriba a la derecha
+            ventana.draw(textoScore);
+
+            // Pantalla de gameOver
             if (nave.gameOver) {
                 //Poner fondo en negro, en la pantalla Game Over
                 ventana.clear(sf::Color::Black);
 
+                //Dibujar GameOver
                 sf::Text textoGameOver("GAME OVER", fuente, 60);
                 textoGameOver.setFillColor(sf::Color::Red);
                 textoGameOver.setOrigin(textoGameOver.getLocalBounds().width / 2, textoGameOver.getLocalBounds().height / 2);
                 textoGameOver.setPosition(ANCHO_VENTANA / 2, ALTO_VENTANA / 2 - 50);
 
+                //Dibujar Score
+                //Usamos el to_string para convertir de numero a string y poder mostrar en pantalla
+                sf::Text textoScore("Score: " + std::to_string(score), fuente, 40);
+                textoScore.setFillColor(sf::Color::White);
+                textoScore.setOrigin(textoGameOver.getLocalBounds().width / 2, textoGameOver.getLocalBounds().height / 2);
+                textoScore.setPosition(ANCHO_VENTANA / 2, ALTO_VENTANA / 2 + 60);
+
+                //Dibujar ingresar nombre
+                sf::Text instruccion("Presiona Enter para guardar", fuente, 20);
+                instruccion.setPosition(ANCHO_VENTANA / 2 - 192, ALTO_VENTANA / 2 + 120);
+                ventana.draw(instruccion);
+                if (ingresandoNombre) {
+                    sf::Text textoInput;
+                    textoInput.setFont(fuente);
+                    textoInput.setString("Nombre: " + std::string(nombreJugador) + "_");  // Cursor "_"
+                    textoInput.setCharacterSize(30);
+                    textoInput.setFillColor(sf::Color::Cyan);
+                    textoInput.setOrigin(textoInput.getLocalBounds().width / 2, textoInput.getLocalBounds().height/2 - 100);  // Centrado horizontal
+                    textoInput.setPosition(ANCHO_VENTANA / 2, ALTO_VENTANA / 2 + 60);
+                    ventana.draw(textoInput);
+                }
+                
+                //Dibujar instruccion para reiniciar el juego
                 sf::Text textoReiniciar("Presiona R para reiniciar", fuente, 24);
                 textoReiniciar.setFillColor(sf::Color::White);
                 textoReiniciar.setOrigin(textoReiniciar.getLocalBounds().width / 2, textoReiniciar.getLocalBounds().height / 2);
-                textoReiniciar.setPosition(ANCHO_VENTANA / 2, ALTO_VENTANA / 2 + 50);
+                textoReiniciar.setPosition(ANCHO_VENTANA / 2, ALTO_VENTANA / 2 + 280);
 
                 ventana.draw(textoGameOver);
+                ventana.draw(textoScore);
                 ventana.draw(textoReiniciar);
                 ventana.display();
                 continue;
@@ -546,6 +662,6 @@ int main() {
     }
 
     //Prueba
-
-    return 0; // Fin del programa
-} // Fin del programa
+    delete[] nombreJugador;
+    return 0;
+} // Fin del main
