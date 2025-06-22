@@ -14,6 +14,8 @@ NAVARRO REYES DANIEL ISAI
 #include <iostream>
 #include <vector>
 #include <cmath>
+#include <fstream>
+#include <sstream>
 
 using namespace std;
 
@@ -271,6 +273,31 @@ void initAsteroides(vector<Asteroide>& asteroides, const sf::Vector2f& posicionN
     }
 } // Inicializa los asteroides
 
+// Guardar la puntuacion
+void guardarPuntuacion(int puntos){
+    std::ofstream archivo("puntuaciones.txt",std::ios::app);
+    if(archivo.is_open()){
+        archivo<<"Puntuacion: "<<puntos<<endl;
+        archivo.close();
+    }
+}
+
+// Leer puntuaciones
+vector<string> leerPuntuaciones(){
+    vector<string> lineas;
+    std::ifstream archivo("puntuaciones.txt");
+    std::string linea;
+
+    if(archivo.is_open()){
+        while(getline(archivo, linea)){
+            lineas.push_back(linea);
+        }
+        archivo.close();
+    }else{
+        lineas.push_back("No se pudo leer el archivo.");
+    }
+    return lineas;
+}
 
 //Main principal (Importante)
 int main() {
@@ -295,10 +322,12 @@ int main() {
 
     EstadoJuego estado = EstadoJuego::MENU;
     Nave nave;
+    int puntuacion=0;
 
     //Vectores
     vector<Misil> misiles;
     vector<Asteroide> asteroides;
+    vector<string> puntuacionesGuardadads;
     sf::Clock reloj;
 
     initAsteroides(asteroides, nave.posicion); // Inicializa asteroides
@@ -337,6 +366,7 @@ int main() {
                 }
                 else if (botonGuardadas.fueClickeado(mousePos)) {
                     estado = EstadoJuego::PARTIDAS_GUARDADAS;
+                    puntuacionesGuardadads=leerPuntuaciones(); // Cargar las puntuaciones
                 }
                 else if (botonSalir.fueClickeado(mousePos)) {
                     estado = EstadoJuego::SALIR;
@@ -368,6 +398,8 @@ int main() {
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space)) nave.disparar(misiles);
             if (nave.gameOver && sf::Keyboard::isKeyPressed(sf::Keyboard::R)) {
                 // Reinicia todo el juego
+                guardarPuntuacion(puntuacion); //Guarda la puntuacion en el archivo
+                puntuacion=0;// Reinicia puntuacion en 0
                 nave = Nave(); // Reinicia nave (vidas=2, gameOver=false)
                 misiles.clear();
                 asteroides.clear();
@@ -414,6 +446,7 @@ int main() {
                     if (longitudVector(mit->posicion - ait->posicion) < ait->radio) {
                         auto hijos = ait->dividir();
                         nuevosAsteroides.insert(nuevosAsteroides.end(), hijos.begin(), hijos.end());
+                        puntuacion+=10*ait->nivelTamano;//aumenta puntos
                         ait = asteroides.erase(ait);
                         mit = misiles.erase(mit);
                         colision = true;
@@ -443,7 +476,27 @@ int main() {
             ventana.draw(titulo);
         }
         else if (estado == EstadoJuego::PARTIDAS_GUARDADAS) {
-            ventana.draw(textoGuardadas);
+            if(puntuacionesGuardadads.empty()){
+                sf::Text texto("No hay partidas guardadas",fuente,26);
+                texto.setPosition(200,250);
+                texto.setFillColor(sf::Color::White);
+                ventana.draw(texto);
+            }else{
+                float y=150;
+                for(const string& linea : puntuacionesGuardadads){
+                    sf::Text texto(linea, fuente, 24);
+                    texto.setPosition(200, y);
+                    texto.setFillColor(sf::Color::White);
+                    ventana.draw(texto);
+                    y+=30;
+                }
+            }
+            // Instruccion para volver
+            sf::Text textoVolver("Presiona ESC para volver al menu", fuente,20);
+            textoVolver.setFillColor(sf::Color::Yellow);
+            textoVolver.setPosition(200,500);
+            ventana.draw(textoVolver);
+        }
         }
         else if (estado == EstadoJuego::JUGANDO) {
             ventana.draw(nave.sprite);
@@ -457,8 +510,15 @@ int main() {
             textoVidas.setPosition(20, 20);  // Esquina superior izquierda
             ventana.draw(textoVidas);
             //FIN DEL CONTADOR DE VIDAS
-
-
+            
+            //Dibujar puntuacion en pantalla
+            // ===== MOSTAR PUNTOS ======
+            sf::Text textoPuntaje("Puntos: ="+std::to_string(puntuacion),fuente, 24);
+            textoPuntaje.setFillColor(sf::Color::White);
+            textoPuntaje.setPosition(20, 50);
+            ventana.draw(textoPuntaje);
+            // ===== FIN DEL CONTADOR DE PUNTOS ======
+            
             // ====== PANTALLA DE GAME OVER ======
             if (nave.gameOver) {
                 //Poner fondo en negro, en la pantalla Game Over
