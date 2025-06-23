@@ -1058,7 +1058,6 @@ int main() {
                             score = 0;
                         }
                     }
-
                     break;
                 }
             }//for (ovni)
