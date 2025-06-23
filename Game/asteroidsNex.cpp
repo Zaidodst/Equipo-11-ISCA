@@ -664,6 +664,13 @@ int main() {
     bool esperarChico = false; // esta bandera es para que, cuando se destruya el ovni grande, espere un tiempo para generar el chico
     int puntuacion=0;
 
+    // variables para el control de tiempo que tarda el jugador en disparar a un asteroide
+    bool disparado = false;
+    float tiempoSinDisparo = 0.f;
+    float tiempoMaxSinDisparo = 20.f; //el tiempo maximo que pasara si no golpea un meteorito es de 20 segundos
+    bool disparadoReciente = false;
+    int pocosAsteroides = 3;
+    bool tiempoDesdeDisparo = 0.f;
     sf::Clock reloj;
 
     initAsteroides(asteroides, nave.posicion, nivelActual); // Inicializa asteroides
@@ -873,6 +880,11 @@ int main() {
                 bool colision = false;
                 for (auto ait = asteroides.begin(); ait != asteroides.end();) {
                     if (longitudVector(mit->posicion - ait->posicion) < ait->radio) {
+                        //Detecta que se le disparo al asteroide
+                        disparado = true;
+                        tiempoSinDisparo = 0.f;
+                        disparadoReciente = true;
+                        tiempoDesdeDisparo = 0.f;
                         //Decrementar el contador de los asteroides restantes
                         asteroidesRestantes--;
                         //Contador de score
@@ -891,6 +903,8 @@ int main() {
                         }
                         
                         auto hijos = ait->dividir();
+                        asteroidesRestantes -=1;
+                        asteroidesRestantes +=hijos.size();
                         nuevosAsteroides.insert(nuevosAsteroides.end(), hijos.begin(), hijos.end());
                         puntuacion+=10*ait->nivelTamano;//aumenta puntos
                         ait = asteroides.erase(ait);
@@ -905,6 +919,19 @@ int main() {
             }
             asteroides.insert(asteroides.end(), nuevosAsteroides.begin(), nuevosAsteroides.end());
 
+        // Toma el control del tiempo que pasa sin dispararle a los asteroides
+        if (!disparado) {   
+            tiempoSinDisparo += dt;
+        } else {
+            disparado = false;
+        }
+        if(disparadoReciente){
+            tiempoDesdeDisparo += dt;
+        }
+        if(tiempoDesdeDisparo >= 0.5f){ //TdE para que el ovni aparezca cuando hay pocos meteoritos
+            disparadoReciente = false;
+        }
+        
             // Mostrar los ovnis
         bool chicoVivo = false, grandeVivo = false;
         interG += dt;
@@ -941,13 +968,21 @@ int main() {
         if(esperarChico && !grandeVivo){ //una vez que el grande haya muerto, comienza a contar el tiempo que pasa despues del suceso
             TdEGrandeMuerto += dt;
             if(TdEGrandeMuerto >= TdEPeque){//cuando hayan pasado al menos 10 seg desde que murio el ovni, si no hay uno chico lo genera
-                    ovnis.emplace_back(tipoOvni::Chico, sf::Vector2f(ANCHO_VENTANA, ALTO_VENTANA / 2.f), sf::Vector2f(-100.f, 0.f), OvniChico);
-                    esperarChico = false;
-                    grandeGen = false;
-                    interG = 0.f; //reinicia el intervalo de tiempo desde que se genera
-                }
+                ovnis.emplace_back(tipoOvni::Chico, sf::Vector2f(ANCHO_VENTANA, ALTO_VENTANA / 2.f), sf::Vector2f(-100.f, 0.f), OvniChico);
+                esperarChico = false;
+                grandeGen = false;
+                interG = 0.f; //reinicia el intervalo de tiempo desde que se genera
             }
-        
+        }
+        // si ya pasaron 10 segundos de que no le dispara a un asteroide, aparece el ovni chiquito
+        if(tiempoSinDisparo >= tiempoMaxSinDisparo && !chicoVivo){
+            ovnis.emplace_back(tipoOvni::Chico, sf::Vector2f(ANCHO_VENTANA, ALTO_VENTANA / 2.f), sf::Vector2f(-100.f, 0.f), OvniChico);
+            tiempoSinDisparo = 0.f; //reinicia el tiempo de disparo
+        }
+        // si quedan pocos asteroides y no hay un ovni chico vivo
+        if(asteroides.size() <= pocosAsteroides && !chicoVivo){
+            ovnis.emplace_back(tipoOvni::Chico, sf::Vector2f(ANCHO_VENTANA, ALTO_VENTANA / 2.f), sf::Vector2f(-100.f, 0.f), OvniChico);
+        }
         //actualiza los ovnis (los mueve)
         for(auto& o : ovnis){
             o.actualizar(dt);
