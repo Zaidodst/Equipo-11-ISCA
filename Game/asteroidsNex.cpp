@@ -7,6 +7,9 @@ MUÑOZ ROMO OSWALDO EMMANUEL
 NAVARRO REYES DANIEL ISAI
 */
 
+//ponganos 10 maestra :)
+
+
 #include <SFML/Graphics.hpp> // Librería para gráficos
 #include <SFML/System.hpp>
 #include <SFML/Audio.hpp> // Librería para audio
@@ -15,7 +18,7 @@ NAVARRO REYES DANIEL ISAI
 #include <iostream>
 #include <vector>
 #include <cmath>
-
+#include <cstdlib> //para aleatorios en los disparos
 using namespace std;
 
 //Variables globales
@@ -391,6 +394,96 @@ struct Asteroide {
 };
 
 
+//estructura y enum de los ovnis
+
+enum class tipoOvni{Grande, Chico};
+
+struct Ovni{
+    //se definen las caracterisicas, posiciones, velocidades y tiempo de disparo
+    tipoOvni tipo;
+    sf::RectangleShape forma;
+    sf::Vector2f posicion;
+    sf::Vector2f velocidad;
+    float TdEDisparo;
+    float temporizador;
+    bool vivo = true;
+
+    //propiedades que tendra el ovni cuando se vea en pantalla (por ahora es prototipo hasta agregar imagenes)
+    Ovni(tipoOvni t, sf::Vector2f pos, sf::Vector2f vel) : tipo(t), posicion(pos), velocidad(vel), temporizador(0.f){
+        if(tipo == tipoOvni::Grande){
+            forma.setSize({30.f,15.f});
+            forma.setFillColor(sf::Color::Red);
+            forma.setOrigin(15.f, 7.5f);// set origin es un punto de referencia para la posicion, rotacio, etc del ovni
+            TdEDisparo = 1.5f; //dispara cada 1 segundo
+            velocidad *= 0.5f; // el ovni grande se mueve mas lento
+        }
+        else{
+            //propiedades del ovni chico
+            forma.setSize({15.f,7.5f});
+            forma.setFillColor(sf::Color::Yellow);
+            forma.setOrigin(7.5f, 3.75f);
+            TdEDisparo = 2.f; //dispara cada 2 segundos
+            velocidad *= 1.f; // el ovni chico se mueve mas rapido
+        }
+        forma.setPosition(posicion);
+    }
+
+    void actualizar(float dt){
+        if(!vivo){
+            return; // si murio el ovni, ya no hace nada
+        }
+        //en caso de que siga vivo, sigue los siguientes patrones
+        posicion += velocidad *dt;
+        forma.setPosition(posicion);
+        temporizador += dt;
+
+        //cuando el ovni llega a un borde, cambia de sentido con la velocidad invertida
+        if(posicion.x < 0 || posicion.x >ANCHO_VENTANA){
+            velocidad.x = -velocidad.x; 
+        }
+        if(posicion.y <0 || posicion.y >ALTO_VENTANA){
+            velocidad.y = -velocidad.y; 
+        }
+    }//actualizar
+    bool Disparar(){
+        return temporizador >= TdEDisparo; // si ya paso el TdE, vuelve a disparar  
+    }//disparar
+    void TdE(){ //TdE es Tiempo de Espera o cooldown del disparo
+        temporizador = 0.f;
+    }//TdE
+
+};//struct ovni
+
+//struct para el misil del ovni
+struct MisilOvni{
+    //propiedades del misil (esencialmente, tienen propiedades similares a los misiles del jugador)
+    sf::CircleShape forma;
+    sf::Vector2f posicion;
+    sf::Vector2f velocidad;
+    float tiempoVida = 2.f; //tiempo de vida del misil
+    float temporizador = 0.f;
+
+    MisilOvni(sf::Vector2f pos, sf::Vector2f vel): posicion(pos), velocidad(vel){
+        forma.setRadius(3);
+        forma.setFillColor(sf::Color::Green);
+        forma.setOrigin(3, 3);
+        forma.setPosition(pos);
+    }
+
+    void actualizar(float dt){
+        posicion += velocidad *dt;
+        forma.setPosition(posicion);
+        temporizador += dt;
+    }
+    
+    //esta bandera sirve para que saber si el disparo salio de la pantalla
+    bool estaFuera() const{ //con const, no se modifican las propiedades del misil
+        return temporizador >= tiempoVida
+        || posicion.x < 0 || posicion.x > ANCHO_VENTANA
+        || posicion.y < 0 || posicion.x >ALTO_VENTANA;
+    }
+};//misil ovni
+
 // Define la función después de la estructura Asteroide:
 void Nave::teletransportar(std::vector<Asteroide>& asteroides) {
     if (temporizadorTeletransporte <= 0) {
@@ -407,7 +500,6 @@ void Nave::teletransportar(std::vector<Asteroide>& asteroides) {
         }
     }
 }
-
 
 // Clase Botón para el menú
 class Boton {
@@ -553,12 +645,19 @@ int main() {
 
     EstadoJuego estado = EstadoJuego::MENU;
     Nave nave;
-    int puntuacion=0;
-
-    //Vectores
+    //declaracion de variables de vectores
     vector<Misil> misiles;
     vector<Asteroide> asteroides;
+    vector<Ovni> ovnis;
+    vector<MisilOvni> disparosOvni;
     vector<string> puntuacionesGuardadads;
+    //intervalos y tiempos de espera entre ovnis
+    float TdEGrande = 15.f, TdEPeque = 20.f, interG = 0.f, TdEGrandeMuerto = 0.f;
+    bool grandeGen = false;
+    bool esperarChico = false; // esta bandera es para que, cuando se destruya el ovni grande, espere un tiempo para generar el chico
+
+    int puntuacion=0;
+
     sf::Clock reloj;
 
     initAsteroides(asteroides, nave.posicion, nivelActual); // Inicializa asteroides
@@ -694,6 +793,14 @@ int main() {
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space)) nave.disparar(misiles);
             if (nave.gameOver && sf::Keyboard::isKeyPressed(sf::Keyboard::R)) {
                 // Reinicia todo el juego
+              
+                nave = Nave(); // Reinicia nave (vidas=2, gameOver=false)
+                misiles.clear();
+                asteroides.clear();
+                
+                initAsteroides(asteroides); // Vuelve a generar asteroides
+                
+
                 //Condicion agregada para que no genere error al poner "r" en un nombre
                 if(!ingresandoNombre){
                     nave = Nave(); // Reinicia nave (vidas=2, gameOver=false)
@@ -701,7 +808,9 @@ int main() {
                     asteroides.clear(); //Limpia los asteriodes
                     score=0; //Resetea el score
                     nivelActual=1; //Reseteal el nivel actual
+                    ovnis.clear();
                     initAsteroides(asteroides,nave.posicion,nivelActual); // Vuelve a generar asteroides
+                    interG = 0.f; // se reinicia el tiempo de intervalo de los ovnis
                 }
             }
             nave.actualizar(dt);
@@ -795,8 +904,137 @@ int main() {
                 if (!colision) ++mit;
             }
             asteroides.insert(asteroides.end(), nuevosAsteroides.begin(), nuevosAsteroides.end());
+
+            // Mostrar los ovnis
+        bool chicoVivo = false, grandeVivo = false;
+        interG += dt;
+        //este ciclo verifica si hay ovnis grandes
+        for(auto &o : ovnis){
+            if(o.vivo && o.tipo == tipoOvni::Grande){
+                grandeVivo = true;
+                break;
+            }
+        }//for ovnis grandes
+        //de igual manera, este ciclo verifica si hay ovnis chicos
+        for(auto &o : ovnis){
+            if(o.vivo && o.tipo == tipoOvni::Chico){
+                chicoVivo = true;
+                break;
+            }
+        }//for ovnis chicos
+
+        //generacion de los ovnis
+        if(!grandeVivo && !esperarChico && !grandeGen){
+            //si muere el ovni chico, reinicia el tiempo del grande
+            if(interG >= TdEGrande){
+                ovnis.emplace_back(tipoOvni::Grande, sf::Vector2f(ANCHO_VENTANA, 200.f), sf::Vector2f(-50.f, 0.f));
+                interG = 0.f; //reinicia el intervalo de tiempo desde que se genera
+                grandeGen = true;
+            }
+        }
+        //comienza el tiempo que espera para generar al ovni chico, una vez el grande muere
+        if(grandeGen && !grandeVivo && !esperarChico){
+            esperarChico = true;
+            TdEGrandeMuerto = 0.f;
+        }
+        //generacion del ovni chico
+        if(esperarChico){ //una vez que el grande haya muerto, comienza a contar el tiempo que pasa despues del suceso
+            TdEGrandeMuerto += dt;
+            if(TdEGrandeMuerto >= TdEPeque){//cuando hayan pasado al menos 10 seg desde que murio el ovni, si no hay uno chico lo genera
+                    ovnis.emplace_back(tipoOvni::Chico, sf::Vector2f(ANCHO_VENTANA, ALTO_VENTANA / 2.f), sf::Vector2f(-100.f, 0.f));
+                    esperarChico = false;
+                    grandeGen = false;
+                    interG = 0.f; //reinicia el intervalo de tiempo desde que se genera
+                }
+            }
+        
+        //actualiza los ovnis (los mueve)
+        for(auto& o : ovnis){
+            o.actualizar(dt);
+            //este segmento se encargara de hacer que los ovnis disparen
+            if(o.vivo && o.Disparar()){
+                sf::Vector2f direccion;
+                if(o.tipo == tipoOvni::Grande){// si es un ovni grande, dispara de manera aleatoria
+                    /*genera un numero entre 0 a 360 y se convierte a float (sen y cos usan flotantes), 
+                    esto se convierte a RADIANES y se genera un vector en una direccion aleatoria*/
+                    float angulo = static_cast<float>(rand()%360);
+                    direccion = sf::Vector2f(cos(gradosARadianes(angulo)), sin(gradosARadianes(angulo)));
+                }
+                else{
+                    //si es un ovni chico, dispara apuntando al jugador
+                    direccion = nave.posicion - o.posicion;
+                    direccion = normalizar(direccion);
+                }//else
+                disparosOvni.emplace_back(o.posicion, direccion * 360.f);
+                o.TdE(); //reestablece el TdE del disparo
+            }
+        }//for (actualizar ovnis)
+
+        for(auto it = disparosOvni.begin(); it !=disparosOvni.end();){// se actualizaran con notacion de punteros
+            (*it).actualizar(dt);
+            if((*it).estaFuera()){ //si se sale de la pantalla el misil, lo elimina
+                it = disparosOvni.erase(it);
+            }
+            else{
+                it++;
+            }
+        }//for (actualizar disparos de ovnis)
+
+        for(auto it = disparosOvni.begin(); it != disparosOvni.end();){ //colisiones de misil a la nave
+            if(longitudVector((*it).posicion - nave.posicion) < 15.f){
+                nave.vidas --;
+                it = disparosOvni.erase(it); //borra el misil que golpeo al jugador
+                if(nave.vidas <= 0){
+                    nave.gameOver= true;
+                }
+                else{
+                    nave.posicion = sf::Vector2f(ANCHO_VENTANA / 2.f, ALTO_VENTANA / 2.f);
+                    nave.velocidad = sf::Vector2f(0.f, 0.f);
+                }//else
+                break;
+            }
+            else{
+                it++;
+            }
         }
 
+        //colisiones de los misiles hacia los ovnis
+        for(auto mit = misiles.begin(); mit != misiles.end();){
+            bool colision = false;
+            for(auto&o : ovnis){
+                //este segmento hace que, mientras la distancia entre el misil y el ovni sea menor a 20 (pixeles)
+                //se considere que hay colision y el ovni muere
+                if(o.vivo && longitudVector(mit->posicion - o.posicion) < 20.f){
+                    o.vivo = false;
+                    mit = misiles.erase(mit); //borra el misil
+                    colision = true;
+                    break;
+                }
+            }//for (ovni)
+            if(!colision){// si no colisiona, el ovni sigue su curso
+                mit++;
+            }
+        }//for colisiones misil-ovni
+
+        //colisiones de ovni con nave 
+        for(auto& o: ovnis){
+            //25.f es para que visualmente coincida que el ovni y la nave colisionan
+            if(o.vivo && longitudVector(nave.posicion - o.posicion) < 25.f){ 
+                nave.vidas --;
+                o.vivo = false;
+                if(nave.vidas <= 0){
+                    nave.gameOver = true;   
+                }else{
+                    //si el jugador aun tiene vidas, reincia la posicion de la nave
+                    nave.posicion = sf::Vector2f(ANCHO_VENTANA / 2.f, ALTO_VENTANA / 2.f);
+                    nave.velocidad = sf::Vector2f(0.f, 0.f);
+                }//else
+                break;
+            }//if (ovni sigue vivo)
+        }
+
+        }   // |||||| TERMINA EL ESTADO JUGANDO |||||||||
+ 
         // Dibujo de pantalla (Importantisimo)
         ventana.clear(sf::Color::Black);
 
@@ -838,11 +1076,14 @@ int main() {
             ventana.draw(nave.sprite);
             for (auto& m : misiles) ventana.draw(m.forma);
             for (auto& a : asteroides) ventana.draw(a.sprite);
-
             //Mensaje del cambio de nivel
             if (mostrarMensajeNivel) {
                 dibujarMensajeNivel(ventana, fuente, nivelActual);
             }
+            //mientras este vivo, se dibuja el ovni (lo muestra en la pantalla)
+            for(auto& o : ovnis)
+                if(o.vivo) ventana.draw(o.forma);
+            for (auto& d : disparosOvni) ventana.draw(d.forma);
 
             // Mostrar vidas
             sf::Text textoVidas("Vidas: " + std::to_string(nave.vidas), fuente, 24);
