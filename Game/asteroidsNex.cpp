@@ -677,7 +677,7 @@ int main() {
 
     // Cargar música
     sf::Music musica;
-    if (!musica.openFromFile("Star Rail.mp3")) {
+    if (!musica.openFromFile("Dragonspine.mp3")) {
         return EXIT_FAILURE; // Carga la música
     }
     musica.setLoop(true);
@@ -842,6 +842,14 @@ int main() {
                     mostrarMensajeNivel = true;
                     tiempoMensajeNivel = TIEMPO_MOSTRAR_NIVEL;
                     initAsteroides(asteroides, nave.posicion, nivelActual);
+
+                    //reinicia las propiedades de los ovnis al pasar de nivel
+                    ovnis.clear();             // borra ovnis existentes
+                    disparosOvni.clear();      // borra disparos de ovnis
+                    esperarChico = false;
+                    grandeGen = false;
+                    interG = 0.f;
+                    TdEGrandeMuerto = 0.f;
                 } else {
                     // Juego completado
                     nave.gameOver = true;
