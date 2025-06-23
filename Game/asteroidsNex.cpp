@@ -677,7 +677,7 @@ int main() {
 
     // Cargar música
     sf::Music musica;
-    if (!musica.openFromFile("Star Rail.mp3")) {
+    if (!musica.openFromFile("Dragonspine.mp3")) {
         return EXIT_FAILURE; // Carga la música
     }
     musica.setLoop(true);
@@ -842,6 +842,14 @@ int main() {
                     mostrarMensajeNivel = true;
                     tiempoMensajeNivel = TIEMPO_MOSTRAR_NIVEL;
                     initAsteroides(asteroides, nave.posicion, nivelActual);
+
+                    //reinicia las propiedades de los ovnis al pasar de nivel
+                    ovnis.clear();             // borra ovnis existentes
+                    disparosOvni.clear();      // borra disparos de ovnis
+                    esperarChico = false;
+                    grandeGen = false;
+                    interG = 0.f;
+                    TdEGrandeMuerto = 0.f;
                 } else {
                     // Juego completado
                     nave.gameOver = true;
@@ -982,6 +990,56 @@ int main() {
         // si quedan pocos asteroides y no hay un ovni chico vivo
         if(asteroides.size() <= pocosAsteroides && !chicoVivo){
             ovnis.emplace_back(tipoOvni::Chico, sf::Vector2f(ANCHO_VENTANA, ALTO_VENTANA / 2.f), sf::Vector2f(-100.f, 0.f), OvniChico);
+        }
+        //actualiza los ovnis (los mueve)
+        for(auto& o : ovnis){
+            o.actualizar(dt);
+            //este segmento se encargara de hacer que los ovnis disparen
+            if(o.vivo && o.Disparar()){
+                sf::Vector2f direccion;
+                if(o.tipo == tipoOvni::Grande){// si es un ovni grande, dispara de manera aleatoria
+                    /*genera un numero entre 0 a 360 y se convierte a float (sen y cos usan flotantes), 
+                    esto se convierte a RADIANES y se genera un vector en una direccion aleatoria*/
+                    float angulo = static_cast<float>(rand()%360);
+                    direccion = sf::Vector2f(cos(gradosARadianes(angulo)), sin(gradosARadianes(angulo)));
+                }
+                else{
+                    //si es un ovni chico, dispara apuntando al jugador
+                    direccion = nave.posicion - o.posicion;
+                    direccion = normalizar(direccion);
+                }//else
+                disparosOvni.emplace_back(o.posicion, direccion * 360.f);
+                o.TdE(); //reestablece el TdE del disparo
+            }
+        }//for (actualizar ovnis)
+
+        for(auto it = disparosOvni.begin(); it !=disparosOvni.end();){// se actualizaran con notacion de punteros
+            (*it).actualizar(dt);
+            if((*it).estaFuera()){ //si se sale de la pantalla el misil, lo elimina
+                it = disparosOvni.erase(it);
+            }
+            else{
+                it++;
+            }
+        }//for (actualizar disparos de ovnis)
+
+        for(auto it = disparosOvni.begin(); it != disparosOvni.end();){ //colisiones de misil a la nave
+            if(longitudVector((*it).posicion - nave.posicion) < 15.f){
+                nave.vidas --;
+                it = disparosOvni.erase(it); //borra el misil que golpeo al jugador
+                if(nave.vidas <= 0){
+                    nave.gameOver= true;
+                    disparosOvni.clear();
+                }
+                else{
+                    nave.posicion = sf::Vector2f(ANCHO_VENTANA / 2.f, ALTO_VENTANA / 2.f);
+                    nave.velocidad = sf::Vector2f(0.f, 0.f);
+                }//else
+                break;
+            }
+            else{
+                it++;
+            }
         }
         //actualiza los ovnis (los mueve)
         for(auto& o : ovnis){
