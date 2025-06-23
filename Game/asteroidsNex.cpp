@@ -1021,7 +1021,7 @@ int main() {
             else{
                 it++;
             }
-        }//for (actualizar disparos de ovnis)
+        }//for actualizar disparos de ovnis
 
         for(auto it = disparosOvni.begin(); it != disparosOvni.end();){ //colisiones de misil a la nave
             if(longitudVector((*it).posicion - nave.posicion) < 15.f){
