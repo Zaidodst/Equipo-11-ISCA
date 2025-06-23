@@ -43,9 +43,9 @@ const float PI = 3.14159265f;
 
 //Lee los scores ya guardados en el archivo txt
 string leerScoresGuardados() {
-    std::ifstream archivo("scores.txt");
-    std::string scores;
-    std::string linea;
+    ifstream archivo("scores.txt");
+    string scores;
+    string linea;
 
     if (archivo.is_open()) {
         while (getline(archivo, linea)) {
@@ -61,7 +61,7 @@ string leerScoresGuardados() {
 
 //Esta funcion va a dibujar el mensaje que te dice en que nivel vas
 void dibujarMensajeNivel(sf::RenderWindow& ventana, sf::Font& fuente, int nivel) {
-    sf::Text textoNivel("Nivel " + std::to_string(nivel), fuente, 72);
+    sf::Text textoNivel("Nivel " + to_string(nivel), fuente, 72);
     textoNivel.setFillColor(sf::Color::Yellow);
     textoNivel.setStyle(sf::Text::Bold);
     
@@ -79,7 +79,7 @@ float gradosARadianes(float grados) {
 } // Convierte grados a radianes
 
 float longitudVector(sf::Vector2f v) {
-    return std::sqrt(v.x * v.x + v.y * v.y); // Calcula la longitud de un vector
+    return sqrt(v.x * v.x + v.y * v.y); // Calcula la longitud de un vector
 } // Calcula la longitud de un vector
 
 sf::Vector2f normalizar(sf::Vector2f v) {
@@ -134,7 +134,7 @@ struct Nave {
         if (temporizadorTeletransporte > 0) temporizadorTeletransporte -= dt;
     } // Actualiza la posición y rotación de la nave
 
-    void teletransportar(std::vector<Asteroide>& asteroides);  // Declaración
+    void teletransportar(vector<Asteroide>& asteroides);  // Declaración
 
     void rotarIzquierda(float dt) {
         rotacion -= velocidadRotacion * dt;
@@ -147,15 +147,15 @@ struct Nave {
     } // Rota la nave a la derecha
 
     void moverAdelante(float dt) {
-        sf::Vector2f direccion(std::sin(gradosARadianes(rotacion)), -std::cos(gradosARadianes(rotacion)));
+        sf::Vector2f direccion(sin(gradosARadianes(rotacion)), -cos(gradosARadianes(rotacion)));
         velocidad += direccion * velocidadMax * dt;
         if (longitudVector(velocidad) > velocidadMax) velocidad = normalizar(velocidad) * velocidadMax;
     } // Mueve la nave hacia adelante
 
     void moverIzquierda(float dt) {
         velocidad += sf::Vector2f(
-            -std::cos(gradosARadianes(rotacion)),
-            -std::sin(gradosARadianes(rotacion))  
+            -cos(gradosARadianes(rotacion)),
+            -sin(gradosARadianes(rotacion))  
         ) * velocidadMax * dt * 0.5f;
 
         if (longitudVector(velocidad) > velocidadMax)
@@ -164,8 +164,8 @@ struct Nave {
 
     void moverDerecha(float dt) {
         velocidad += sf::Vector2f(
-            std::cos(gradosARadianes(rotacion)),
-            std::sin(gradosARadianes(rotacion))
+            cos(gradosARadianes(rotacion)),
+            sin(gradosARadianes(rotacion))
         ) * velocidadMax * dt * 0.5f;
 
         if (longitudVector(velocidad) > velocidadMax)
@@ -173,7 +173,7 @@ struct Nave {
     } // Mueve la nave hacia la derecha
 
     void moverAtras(float dt) {
-        sf::Vector2f direccion(-std::sin(gradosARadianes(rotacion)), std::cos(gradosARadianes(rotacion)));
+        sf::Vector2f direccion(-sin(gradosARadianes(rotacion)), cos(gradosARadianes(rotacion)));
         velocidad += direccion * velocidadMax * dt * 0.5f;
         if (longitudVector(velocidad) > velocidadMax) velocidad = normalizar(velocidad) * velocidadMax;
     } // Mueve la nave hacia atrás
@@ -185,7 +185,7 @@ struct Nave {
 
     void disparar(vector<struct Misil>& misiles) {
         if (puedeDisparar()) {
-            sf::Vector2f direccion(std::sin(gradosARadianes(rotacion)), -std::cos(gradosARadianes(rotacion)));
+            sf::Vector2f direccion(sin(gradosARadianes(rotacion)), -cos(gradosARadianes(rotacion)));
             misiles.emplace_back(posicion + direccion * 20.f, direccion * 500.f);
             temporizadorEnfriamiento = enfriamientoMisil;
         }
@@ -309,7 +309,7 @@ void dibujarVentanaAyuda(sf::RenderWindow& ventana, const BotonAyuda& ayuda) {
     }
 
     // Indicador de página
-    sf::Text pagInfo(std::to_string(ayuda.paginaActual + 1), ayuda.fuente, 20);
+    sf::Text pagInfo(to_string(ayuda.paginaActual + 1), ayuda.fuente, 20);
     pagInfo.setPosition(ANCHO_VENTANA/2 + 160, ALTO_VENTANA/2 + 120);
     ventana.draw(pagInfo);
 }//Fin del dibujo
@@ -487,7 +487,7 @@ struct MisilOvni{
 };//misil ovni
 
 // Define la función después de la estructura Asteroide:
-void Nave::teletransportar(std::vector<Asteroide>& asteroides) {
+void Nave::teletransportar(vector<Asteroide>& asteroides) {
     if (temporizadorTeletransporte <= 0) {
         posicion.x = rand() % ANCHO_VENTANA;
         posicion.y = rand() % ALTO_VENTANA;
@@ -573,7 +573,7 @@ void initAsteroides(vector<Asteroide>& asteroides, const sf::Vector2f& posicionN
 
 // Guardar la puntuacion
 void guardarPuntuacion(int puntos){
-    std::ofstream archivo("puntuaciones.txt",std::ios::app);
+    ofstream archivo("puntuaciones.txt",ios::app);
     if(archivo.is_open()){
         archivo<<"Puntuacion: "<<puntos<<endl;
         archivo.close();
@@ -583,8 +583,8 @@ void guardarPuntuacion(int puntos){
 // Leer puntuaciones
 vector<string> leerPuntuaciones(){
     vector<string> lineas;
-    std::ifstream archivo("puntuaciones.txt");
-    std::string linea;
+    ifstream archivo("puntuaciones.txt");
+    string linea;
 
     if(archivo.is_open()){
         while(getline(archivo, linea)){
@@ -597,13 +597,13 @@ vector<string> leerPuntuaciones(){
     return lineas;
 }
 
-//############################
+//############################  
 //############################
 //############################
 //############################
 //Main principal (Importante)
 int main() {
-    //Variables para el guardado del nmbre
+    //Variables para el guardado del nombre
     char* nombreJugador = nullptr;
     int capacidadNombre = 0;
     int longitudNombre = 0;
@@ -621,7 +621,7 @@ int main() {
 
     //Cargar las imagenes de la nave y los asteroides
     if (!texturaNave.loadFromFile("nave.png") || !texturaAsteroide.loadFromFile("asteroide.png")) {
-    std::cerr << "Error cargando texturas\n";
+    cerr << "Error cargando texturas\n";
     return -1;
 }
     //texturas para los ovnis
@@ -717,7 +717,7 @@ int main() {
             //Guardar score y nombre
             if (ingresandoNombre && sf::Keyboard::isKeyPressed(sf::Keyboard::Enter) && longitudNombre > 0) {
                 // Guardar en archivo de texto
-                std::ofstream archivo("scores.txt", std::ios::app);  // ios::app No sobreescribe los scores anteriores
+                ofstream archivo("scores.txt", ios::app);  // ios::app No sobreescribe los scores anteriores
                 if (archivo.is_open()) {
                     archivo << nombreJugador << ": " << score << "\n";  // Ej: "Dani: 350"
                     archivo.close();
@@ -1194,13 +1194,13 @@ int main() {
             for (auto& d : disparosOvni) ventana.draw(d.forma);
 
             // Mostrar vidas
-            sf::Text textoVidas("Vidas: " + std::to_string(nave.vidas), fuente, 24);
+            sf::Text textoVidas("Vidas: " + to_string(nave.vidas), fuente, 24);
             textoVidas.setFillColor(sf::Color::White);
             textoVidas.setPosition(20, 20);  // Esquina superior izquierda
             ventana.draw(textoVidas);
             //Fin del contador de vidas
 
-            sf::Text textoScore("Score: " + std::to_string(score), fuente, 24);
+            sf::Text textoScore("Score: " + to_string(score), fuente, 24);
             textoScore.setFillColor(sf::Color::Yellow);
             textoScore.setPosition(ANCHO_VENTANA -240, 20); //Pone el score arriba a la derecha
             ventana.draw(textoScore);
@@ -1218,7 +1218,7 @@ int main() {
 
                 //Dibujar Score
                 //Usamos el to_string para convertir de numero a string y poder mostrar en pantalla
-                sf::Text textoScore("Score: " + std::to_string(score), fuente, 40);
+                sf::Text textoScore("Score: " + to_string(score), fuente, 40);
                 textoScore.setFillColor(sf::Color::White);
                 textoScore.setOrigin(textoGameOver.getLocalBounds().width / 2, textoGameOver.getLocalBounds().height / 2);
                 textoScore.setPosition(ANCHO_VENTANA / 2, ALTO_VENTANA / 2 + 60);
@@ -1230,7 +1230,7 @@ int main() {
                 if (ingresandoNombre) {
                     sf::Text textoInput;
                     textoInput.setFont(fuente);
-                    textoInput.setString("Nombre: " + std::string(nombreJugador) + "_");  // Cursor "_"
+                    textoInput.setString("Nombre: " + string(nombreJugador) + "_");  // Cursor "_"
                     textoInput.setCharacterSize(30);
                     textoInput.setFillColor(sf::Color::Cyan);
                     textoInput.setOrigin(textoInput.getLocalBounds().width / 2, textoInput.getLocalBounds().height/2 - 100);  // Centrado horizontal
@@ -1257,7 +1257,6 @@ int main() {
         ventana.display();
     }
 
-    //Prueba
     delete[] nombreJugador;
     return 0;
 } // Fin del main
